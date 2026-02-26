@@ -58,6 +58,11 @@ const initializeSocket = (server) => {
                     content: payload.content,
                     role: "user"
                 })
+                // Fetch chat history BEFORE calling Gemini
+                const chatHistory = await messageModel.find({
+                    chat: payload.chat
+                }).sort({ createdAt: -1 }).limit(20).lean().reverse()
+
                 // Call Gemini
                 const response = await aiService.generateResult(chatHistory.map(item => {
                     return {
@@ -73,11 +78,6 @@ const initializeSocket = (server) => {
                     content: payload.content,
                     role: "model"
                 })
-
-                const chatHistory = await messageModel.find({
-                    chat: payload.chat
-                })
-
 
                 // Emit the response back to the client
                 socket.emit("ai-response", { response });
