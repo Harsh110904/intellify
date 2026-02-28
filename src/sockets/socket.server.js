@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken")
 const userModel = require("../models/user.model")
 const aiService = require("../services/ai.service")
 const messageModel = require("../models/message.model")
+const { createMemory, queryMemory } = require("../services/vector.service")
+
 let io;
 
 const initializeSocket = (server) => {
@@ -52,16 +54,35 @@ const initializeSocket = (server) => {
                     return;
                 }
 
-                await messageModel.create({
+                const message = await messageModel.create({
                     chat: payload.chat,
                     user: socket.user._id,
                     content: payload.content,
                     role: "user"
                 })
+
+                const vectors = await aiService.generateVector(payload.content)
+                console.log("vectors generated:", vectors)
+
+                await createMemory({
+                    vectors,
+                    id: message._id.toString(),
+                    metadata: {
+                        chat: payload.chat.toString(),
+                        user: socket.user._id.toString(),
+                        text: payload.content.toString()
+                    }
+                })
+
+                const memory = await queryMemory({
+                    queryVector: vectors,
+                    limit: 3
+                })
+                console.log(memory)
                 // Fetch chat history BEFORE calling Gemini
-                const chatHistory = await messageModel.find({
+                const chatHistory = (await messageModel.find({
                     chat: payload.chat
-                }).sort({ createdAt: -1 }).limit(20).lean().reverse()
+                }).sort({ createdAt: -1 }).limit(20).lean()).reverse()
 
                 // Call Gemini
                 const response = await aiService.generateResult(chatHistory.map(item => {
@@ -72,13 +93,23 @@ const initializeSocket = (server) => {
                 }));
                 console.log("Gemini Response:", response);
 
-                await messageModel.create({
+                const responseMessage = await messageModel.create({
                     chat: payload.chat,
                     user: socket.user._id,
-                    content: payload.content,
+                    content: response,
                     role: "model"
                 })
 
+                const responseVectors = await aiService.generateVector(response)
+                await createMemory({
+                    vectors: responseVectors,
+                    id: responseMessage._id.toString(),
+                    metadata: {
+                        chat: payload.chat.toString(),
+                        user: socket.user._id.toString(),
+                        text: response
+                    }
+                })
                 // Emit the response back to the client
                 socket.emit("ai-response", { response });
             } catch (error) {

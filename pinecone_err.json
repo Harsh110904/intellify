@@ -1,0 +1,5 @@
+{
+  "name": "PineconeArgumentError",
+  "message": "Must pass in at least 1 record to upsert.",
+  "stack": "PineconeArgumentError: Must pass in at least 1 record to upsert.\n    at UpsertCommand.validator (C:\\Users\\Harsh\\Desktop\\intellify\\node_modules\\@pinecone-database\\pinecone\\dist\\data\\vectors\\upsert.js:15:19)\n    at UpsertCommand.run (C:\\Users\\Harsh\\Desktop\\intellify\\node_modules\\@pinecone-database\\pinecone\\dist\\data\\vectors\\upsert.js:27:14)\n    at Index.upsert (C:\\Users\\Harsh\\Desktop\\intellify\\node_modules\\@pinecone-database\\pinecone\\dist\\data\\index.js:396:42)\n    at test ([eval]:1:305)\n    at [eval]:1:560\n    at runScriptInThisContext (node:internal/vm:209:10)\n    at node:internal/process/execution:449:12\n    at [eval]-wrapper:6:24\n    at runScriptInContext (node:internal/process/execution:447:60)\n    at evalFunction (node:internal/process/execution:87:30)"
+}

@@ -12,6 +12,16 @@ const generateResult = async (prompt) => {
     return result.response.text();
 }
 
+async function generateVector(content) {
+    const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
+    const result = await model.embedContent({
+        content: { parts: [{ text: content }] },
+        outputDimensionality: 1024
+    });
+    return result.embedding.values;
+}
+
 module.exports = {
-    generateResult
+    generateResult,
+    generateVector
 };
