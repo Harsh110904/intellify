@@ -4,7 +4,8 @@ const jwt = require("jsonwebtoken")
 const userModel = require("../models/user.model")
 const aiService = require("../services/ai.service")
 const messageModel = require("../models/message.model")
-const { createMemory, queryMemory } = require("../services/vector.service")
+const { createMemory, queryMemory } = require("../services/vector.service");
+const { listModels } = require("@pinecone-database/pinecone/dist/inference");
 
 let io;
 
@@ -84,13 +85,25 @@ const initializeSocket = (server) => {
                     chat: payload.chat
                 }).sort({ createdAt: -1 }).limit(20).lean()).reverse()
 
-                // Call Gemini
-                const response = await aiService.generateResult(chatHistory.map(item => {
+                const stm = chatHistory.map(item => {
                     return {
                         role: item.role,
                         parts: [{ text: item.content }]
                     }
-                }));
+                })
+
+                const ltm = [{
+                    role: "system",
+                    parts: {
+                        text: `
+                            these are some previous messages from the chat, use them to generate a response
+                                ${memory.map(item => item.metadata.text).join("\n")}`
+                    }
+                }]
+
+                console.log([...ltm, ...stm])
+                // Call Gemini
+                const response = await aiService.generateResult(...ltm, ...stm);
                 console.log("Gemini Response:", response);
 
                 const responseMessage = await messageModel.create({
