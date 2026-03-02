@@ -54,17 +54,25 @@ const initializeSocket = (server) => {
                     console.error("No prompt (content) provided!");
                     return;
                 }
-
-                const message = await messageModel.create({
-                    chat: payload.chat,
-                    user: socket.user._id,
-                    content: payload.content,
-                    role: "user"
-                })
-
+                /*
+                         const message = await messageModel.create({
+                             chat: payload.chat,
+                             user: socket.user._id,
+                             content: payload.content,
+                             role: "user"
+                         })
+         
+                         const vectors = await aiService.generateVector(payload.content)
+                         console.log("vectors generated:", vectors)
+         */
+                const message = await
+                    messageModel.create({
+                        chat: payload.chat,
+                        user: socket.user._id,
+                        content: payload.content,
+                        role: "user"
+                    })
                 const vectors = await aiService.generateVector(payload.content)
-                console.log("vectors generated:", vectors)
-
                 await createMemory({
                     vectors,
                     id: message._id.toString(),
@@ -75,15 +83,21 @@ const initializeSocket = (server) => {
                     }
                 })
 
-                const memory = await queryMemory({
-                    queryVector: vectors,
-                    limit: 3
-                })
-                console.log(memory)
+                const [memory, chatHistoryRaw] = await Promise.all([
+                    queryMemory({
+                        queryVector: vectors,
+                        limit: 3
+                    }),
+                    messageModel.find({
+                        chat: payload.chat
+                    }).sort({ createdAt: -1 }).limit(20).lean()
+                ]);
+
                 // Fetch chat history BEFORE calling Gemini
-                const chatHistory = (await messageModel.find({
-                    chat: payload.chat
-                }).sort({ createdAt: -1 }).limit(20).lean()).reverse()
+                const chatHistory = chatHistoryRaw.reverse();
+
+
+                // Fetch chat history BEFORE calling Gemini
 
                 const stm = chatHistory.map(item => {
                     return {
@@ -106,14 +120,17 @@ const initializeSocket = (server) => {
                 const response = await aiService.generateResult(...ltm, ...stm);
                 console.log("Gemini Response:", response);
 
-                const responseMessage = await messageModel.create({
-                    chat: payload.chat,
-                    user: socket.user._id,
-                    content: response,
-                    role: "model"
-                })
 
-                const responseVectors = await aiService.generateVector(response)
+                const [responseMessage, responseVectors] = await Promise.all([
+                    messageModel.create({
+                        chat: payload.chat,
+                        user: socket.user._id,
+                        content: response,
+                        role: "model"
+                    }),
+                    aiService.generateVector(response)
+                ])
+
                 await createMemory({
                     vectors: responseVectors,
                     id: responseMessage._id.toString(),
