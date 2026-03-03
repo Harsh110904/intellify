@@ -21,6 +21,7 @@ async function queryMemory({ queryVector, limit = 5, metadata }) {
     const data = await intellifyIndex.query({
         vector: queryVector,
         topK: limit,     // topk means vector space me us point ke paas jo sabse closest hai
+        includeMetadata: true,
         filter: metadata ? { metadata } : undefined
     })
     return data.matches

@@ -107,17 +107,17 @@ const initializeSocket = (server) => {
                 })
 
                 const ltm = [{
-                    role: "system",
-                    parts: {
+                    role: "user",
+                    parts: [{
                         text: `
                             these are some previous messages from the chat, use them to generate a response
-                                ${memory.map(item => item.metadata.text).join("\n")}`
-                    }
+                                ${memory.map(item => item.metadata?.text || "").join("\n")}`
+                    }]
                 }]
 
                 console.log([...ltm, ...stm])
-                // Call Gemini
-                const response = await aiService.generateResult(...ltm, ...stm);
+                // Call Gemini, passing the array of messages directly instead of spreading arguments
+                const response = await aiService.generateResult([...ltm, ...stm]);
                 console.log("Gemini Response:", response);
 
 
