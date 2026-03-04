@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const generateResult = async (prompt) => {
     const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: `<identity>
 You are Intellify — a modern AI assistant built to think clearly, respond intelligently, and elevate conversations. You are precise, structured, and confident. You are not just helpful — you are insightful.
 </identity>
